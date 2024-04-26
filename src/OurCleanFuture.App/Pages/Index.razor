@@ -1,7 +1,9 @@
 ﻿@page "/"
 @using OurCleanFuture.Data
 @using Microsoft.EntityFrameworkCore
+@using OurCleanFuture.App.Services
 @inject IDbContextFactory<AppDbContext> ContextFactory
+@inject IFileLoggerService FileLogger
 @implements IDisposable
 
 <PageTitle>Home page</PageTitle>
@@ -142,7 +144,8 @@
 
     protected override async Task OnInitializedAsync()
     {
-            _context = await ContextFactory.CreateDbContextAsync();
+        FileLogger.Log("This is in Index.razor");
+        _context = await ContextFactory.CreateDbContextAsync();
             _actionCount = _context.Actions.Count();
     }
 

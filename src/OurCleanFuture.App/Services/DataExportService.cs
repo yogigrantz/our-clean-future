@@ -8,104 +8,122 @@ namespace OurCleanFuture.App.Services;
 public class DataExportService
 {
     private readonly IDbContextFactory<AppDbContext> _dbContextFactory;
+    private readonly IFileLoggerService _logger;
 
-    public DataExportService(IDbContextFactory<AppDbContext> dbContextFactory)
+    public DataExportService(IDbContextFactory<AppDbContext> dbContextFactory, IFileLoggerService logger)
     {
         _dbContextFactory = dbContextFactory;
+        _logger = logger;
     }
 
     public async Task<XlsxExport> GenerateActionsXlsx(string fileName)
     {
-        using var context = _dbContextFactory.CreateDbContext();
-        var actions = await MapActionsToExportModel(context);
-
-        var orderedActions = actions
-            .OrderBy(a => a.Number[0])
-            .ThenBy(a => a.Number.Length)
-            .ThenBy(a => a.Number);
-
         var xlsxExport = new XlsxExport(fileName);
-        using (var workbook = new XLWorkbook())
+
+        try
         {
-            var ws = workbook.Worksheets.Add("Actions");
+            using var context = _dbContextFactory.CreateDbContext();
+            var actions = await MapActionsToExportModel(context);
 
-            SetHeaderNames(ws);
-            SetHeaderStyle(ws);
-            InsertData(orderedActions, ws);
-            SetColumnWidth(ws);
-            SetHyperlinksForIdColumn(ws);
-            SetHyperlinksForEditColumn(ws);
-            SetBackgroundColorForIdAndNumberColumn(ws);
-            SetGreyColorForAlternatingRows(ws);
+            var orderedActions = actions
+                .OrderBy(a => a.Number[0])
+                .ThenBy(a => a.Number.Length)
+                .ThenBy(a => a.Number);
 
-            xlsxExport.Save(workbook);
+            using (var workbook = new XLWorkbook())
+            {
+                var ws = workbook.Worksheets.Add("Actions");
+
+                SetHeaderNames(ws);
+                SetHeaderStyle(ws);
+                InsertData(orderedActions, ws);
+                SetColumnWidth(ws);
+                SetHyperlinksForIdColumn(ws);
+                SetHyperlinksForEditColumn(ws);
+                SetBackgroundColorForIdAndNumberColumn(ws);
+                SetGreyColorForAlternatingRows(ws);
+
+                xlsxExport.Save(workbook);
+            }
+
+        }
+        catch (Exception ex)
+        {
+            _logger.Log(ex.Message);
         }
 
         return xlsxExport;
     }
 
-    private static async Task<ActionExportModel[]> MapActionsToExportModel(AppDbContext context) =>
-        await context.Actions
-            .Select(
-                a =>
-                    new ActionExportModel(
-                        a.Id,
-                        a.Number,
-                        a.Title,
-                        a.Leads.FirstOrDefault().Branch.Department.ShortName,
-                        a.Leads.FirstOrDefault().Branch.Name,
-                        a.Objective.Title,
-                        a.DirectorsCommittees.Count >= 1
-                            ? a.DirectorsCommittees[0].Name
-                            : string.Empty,
-                        a.DirectorsCommittees.Count >= 2
-                            ? a.DirectorsCommittees[1].Name
-                            : string.Empty,
-                        a.TargetCompletionDate != null
-                            ? DateOnly.FromDateTime((System.DateTime)a.TargetCompletionDate)
-                            : null,
-                        a.ActualCompletionDate != null
-                            ? DateOnly.FromDateTime((System.DateTime)a.ActualCompletionDate)
-                            : null,
-                        a.InternalStatus.GetDisplayName(),
+    private static async Task<ActionExportModel[]> MapActionsToExportModel(AppDbContext context)
+    {
+        List<ActionExportModel> actionExportModels = new List<ActionExportModel>();
+
+        foreach (var a in context.Actions)
+        {
+            string? leadDept = a.Leads?.FirstOrDefault()?.Branch?.Department?.ShortName;
+            string? branch = a.Leads?.FirstOrDefault()?.Branch?.Name;
+            string dirComitee1 = "";
+            string dirComitee2 = "";
+            if (a.DirectorsCommittees?.Count >= 1)
+                dirComitee1 = a.DirectorsCommittees[0].Name;
+            if (a.DirectorsCommittees?.Count >= 2)
+                dirComitee2 = a.DirectorsCommittees[1].Name;
+
+            DateOnly? targetCompletionDate = null;
+            if (a.TargetCompletionDate != null)
+                targetCompletionDate = DateOnly.FromDateTime((System.DateTime)a.TargetCompletionDate);
+            DateOnly? actuaCompletionDate = null;
+            if (a.ActualCompletionDate != null)
+                actuaCompletionDate = DateOnly.FromDateTime((System.DateTime)a.ActualCompletionDate);
+
+            string undertaken = "";
+            if (a.UndertakenInTheTraditionalTerritoriesOf != null)
+                undertaken = string.Join(", ", a.UndertakenInTheTraditionalTerritoriesOf.Select(x => x.AbbreviatedName));
+
+            string indicators = "";
+            if (a.Indicators != null && a.Indicators.Any(i => i.CollectionInterval == Data.Entities.CollectionInterval.Quarterly
+                                                           || i.CollectionInterval == Data.Entities.CollectionInterval.Biannual))
+                indicators = string.Join(
+                            "\n\n",
+                            a.Indicators
+                                .Where(i => i.CollectionInterval == Data.Entities.CollectionInterval.Quarterly
+                                         || i.CollectionInterval == Data.Entities.CollectionInterval.Biannual)
+                                .Select(x => x.Title));
+            string indicatorsAnnual = "";
+            if (a.Indicators != null && a.Indicators.Any(i => i.CollectionInterval == Data.Entities.CollectionInterval.Annual))
+                indicatorsAnnual = string.Join(
+                            "\n\n",
+                            a.Indicators
+                                .Where(i => i.CollectionInterval == Data.Entities.CollectionInterval.Annual)
+                                .Select(x => x.Title)
+                        );
+
+            string internalStatus = a.InternalStatus.GetDisplayName();
+            string externalStatus = a.ExternalStatus.GetDisplayName();
+
+            ActionExportModel aem = new ActionExportModel(a.Id, a.Number, a.Title, leadDept ?? "", branch ?? "", a.Objective?.Title ?? "",
+                        dirComitee1, dirComitee2, targetCompletionDate, actuaCompletionDate,
+                        internalStatus,
                         a.InternalStatusUpdatedBy,
                         a.InternalStatusUpdatedDate,
-                        a.ExternalStatus.GetDisplayName(),
+                        externalStatus,
                         a.ExternalStatusUpdatedBy,
                         a.ExternalStatusUpdatedDate,
-                        string.Join(
-                            ", ",
-                            a.UndertakenInTheTraditionalTerritoriesOf.Select(x => x.AbbreviatedName)
-                        ),
+                        undertaken,
                         a.EngagementsAndPartnershipActivities,
                         a.PublicExplanation,
                         a.Note,
-                        string.Join(
-                            "\n\n",
-                            a.Indicators
-                                .Where(
-                                    i =>
-                                        i.CollectionInterval
-                                            == Data.Entities.CollectionInterval.Quarterly
-                                        || i.CollectionInterval
-                                            == Data.Entities.CollectionInterval.Biannual
-                                )
-                                .Select(x => x.Title)
-                        ),
-                        string.Join(
-                            "\n\n",
-                            a.Indicators
-                                .Where(
-                                    i =>
-                                        i.CollectionInterval
-                                        == Data.Entities.CollectionInterval.Annual
-                                )
-                                .Select(x => x.Title)
-                        ),
-                        "edit"
-                    )
-            )
-            .ToArrayAsync();
+                        indicators,
+                        indicatorsAnnual,
+                        "edit");
+
+            actionExportModels.Add(aem);
+        }
+
+        return actionExportModels.ToArray();
+
+    }
 
     private static void SetHyperlinksForIdColumn(IXLWorksheet ws)
     {

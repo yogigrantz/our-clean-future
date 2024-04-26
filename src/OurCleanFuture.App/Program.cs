@@ -46,6 +46,9 @@ try
 
     // Add services to the container.
     builder.Services.AddSingleton(configuration);
+
+    builder.Services.AddSingleton<IFileLoggerService>(_ => new FileLoggerService($"../OurCleanFutureLogs/Log.txt"));
+
     builder.Services.AddRazorPages();
     builder.Services.AddServerSideBlazor();
 
