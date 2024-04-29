@@ -18,7 +18,7 @@ public class DataExportService
 
     public async Task<XlsxExport> GenerateActionsXlsx(string fileName)
     {
-        var xlsxExport = new XlsxExport(fileName);
+        XlsxExport xlsxExport = new XlsxExport(fileName);
 
         try
         {
