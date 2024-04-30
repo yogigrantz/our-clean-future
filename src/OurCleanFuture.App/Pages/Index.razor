@@ -55,21 +55,21 @@
                         Collection of data from October 1 – December 31
                     </MudText>
                 </div>
-                <MudDivider/>
+                <MudDivider />
                 <div class="d-flex my-2">
                     <MudText Typo="Typo.h6" Color="Color.Primary" Class="mr-2">April</MudText>
                     <MudText Typo="Typo.subtitle1" Class="mud-text-secondary ml-16">
                         Collection of data from entire previous year for <b>public annual reporting</b>, and collection of quarterly indicators from January 1 – March 31
                     </MudText>
                 </div>
-                <MudDivider/>
+                <MudDivider />
                 <div class="d-flex my-2">
                     <MudText Typo="Typo.h6" Color="Color.Primary">August</MudText>
                     <MudText Typo="Typo.subtitle1" Class="mud-text-secondary ml-12">
                         Collection of data from April 1 – June 30
                     </MudText>
                 </div>
-                <MudDivider/>
+                <MudDivider />
                 <div class="d-flex mt-2">
                     <MudText Typo="Typo.h6" Color="Color.Primary">November</MudText>
                     <MudText Typo="Typo.subtitle1" Class="mud-text-secondary ml-4">
@@ -140,18 +140,21 @@
 
 @code {
     int _actionCount = 131;
-    AppDbContext _context = default!;
+    //AppDbContext _context = default!;
 
     protected override async Task OnInitializedAsync()
     {
-        FileLogger.Log("This is in Index.razor");
-        _context = await ContextFactory.CreateDbContextAsync();
-            _actionCount = _context.Actions.Count();
+        if (FileLogger != null)
+        {
+            FileLogger.Log($"This is in Index.razor Environment.CurrentDirectory: {Environment.CurrentDirectory}");
+            //_context = await ContextFactory.CreateDbContextAsync();
+            //_actionCount = _context.Actions.Count();
+        }
     }
 
     public void Dispose()
     {
-        _context.Dispose();
+        //_context.Dispose();
     }
 
 }

@@ -33,6 +33,11 @@ try
     };
     var builder = WebApplication.CreateBuilder(options);
     builder.Host.UseWindowsService();
+    builder.Services.AddSingleton<IFileLoggerService>(_ => new FileLoggerService($"C:\\WebApps\\OurCleanFutureLogs\\Log.txt"));
+    ServiceProvider svc = builder.Services.BuildServiceProvider();
+
+    IFileLoggerService logger1 = svc.GetRequiredService<IFileLoggerService>();
+    logger1.Log("Step 1");
 
     var configuration = builder.Configuration;
 
@@ -47,8 +52,7 @@ try
     // Add services to the container.
     builder.Services.AddSingleton(configuration);
 
-    builder.Services.AddSingleton<IFileLoggerService>(_ => new FileLoggerService($"../OurCleanFutureLogs/Log.txt"));
-
+  
     builder.Services.AddRazorPages();
     builder.Services.AddServerSideBlazor();
 
@@ -63,6 +67,8 @@ try
         options.ForwardedHeaders =
             ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
     });
+
+    logger1.Log("Step 2");
 
     // Add authentication services
     builder.Services
@@ -147,6 +153,8 @@ try
 
     builder.Services.AddHttpContextAccessor();
 
+    logger1.Log("Step 3");
+
     builder.Services.AddMudServices();
 #if DEBUG
     builder.Services.AddDbContextFactory<AppDbContext>(
@@ -176,6 +184,8 @@ try
     );
     builder.Services.AddScoped<IClaimsTransformation, AddRoleClaimsTransformation>();
     builder.Services.AddLocalization();
+
+    logger1.Log("Step 4");
 
     builder.Services.AddEndpointsApiExplorer();
     builder.Services.AddOpenApiDocument(config =>
@@ -212,6 +222,8 @@ try
         app.UseHsts();
     }
 
+    logger1.Log("Step 5");
+
     app.UseOpenApi();
     app.UseSwaggerUi3();
     app.UseReDoc(config =>
@@ -243,6 +255,8 @@ try
 #endif
         .WriteTo.Seq(configuration["Seq:Url"])
         .CreateLogger();
+
+    logger1.Log("Step 6");
 
     app.MapIndicatorEndpoints();
     app.MapActionEndpoints();
