@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Hosting.WindowsServices;
 using MudBlazor.Services;
+using Newtonsoft.Json;
 using NSwag;
 using OurCleanFuture.App;
 using OurCleanFuture.App.Endpoints;
@@ -37,9 +38,9 @@ try
     ServiceProvider svc = builder.Services.BuildServiceProvider();
 
     IFileLoggerService logger1 = svc.GetRequiredService<IFileLoggerService>();
-    logger1.Log("Step 1");
+    logger1.Log($"Step 1 ContentRootPath: {AppContext.BaseDirectory}");
 
-    var configuration = builder.Configuration;
+    ConfigurationManager configuration = builder.Configuration;
 
     builder.Host.UseSerilog(
         (context, services, configuration) =>
@@ -68,7 +69,7 @@ try
             ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
     });
 
-    logger1.Log("Step 2");
+    logger1.Log($"Step 2 Configuration: \r\n{JsonConvert.SerializeObject(configuration, Formatting.Indented)}\r\nConn str: {configuration.GetConnectionString("AppDbContext")}");
 
     // Add authentication services
     builder.Services

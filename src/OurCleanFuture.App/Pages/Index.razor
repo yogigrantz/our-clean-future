@@ -146,7 +146,7 @@
     {
         if (FileLogger != null)
         {
-            FileLogger.Log($"This is in Index.razor Environment.CurrentDirectory: {Environment.CurrentDirectory}");
+            FileLogger.Log($"This is in Index.razor Environment.Username: {Environment.UserName}, Environment.CurrentDirectory: {Environment.CurrentDirectory}");
             //_context = await ContextFactory.CreateDbContextAsync();
             //_actionCount = _context.Actions.Count();
         }
