@@ -140,21 +140,17 @@
 
 @code {
     int _actionCount = 131;
-    //AppDbContext _context = default!;
+    AppDbContext _context = default!;
 
     protected override async Task OnInitializedAsync()
     {
-        if (FileLogger != null)
-        {
-            FileLogger.Log($"This is in Index.razor Environment.Username: {Environment.UserName}, Environment.CurrentDirectory: {Environment.CurrentDirectory}");
-            //_context = await ContextFactory.CreateDbContextAsync();
-            //_actionCount = _context.Actions.Count();
-        }
+            _context = await ContextFactory.CreateDbContextAsync();
+            _actionCount = _context.Actions.Count();
     }
 
     public void Dispose()
     {
-        //_context.Dispose();
+        _context.Dispose();
     }
 
 }
