@@ -60,8 +60,16 @@ public class DataExportService
     private async Task<ActionExportModel[]> MapActionsToExportModel(AppDbContext context)
     {
         List<ActionExportModel> actionExportModels = new List<ActionExportModel>();
-        OurCleanFuture.Data.Entities.Action curActionRec = null;
-        foreach (var a in context.Actions)
+        Data.Entities.Action curActionRec = null;
+        List<Data.Entities.Action> actions = await context.Actions
+                                        .Include(l => l.Leads)
+                                        .ThenInclude(b => b.Branch)
+                                        .ThenInclude(d => d.Department)
+                                        .Include(dc => dc.DirectorsCommittees)
+                                        .Include(u => u.UndertakenInTheTraditionalTerritoriesOf)
+                                        .Include(i => i.Indicators)
+                                        .ToListAsync();
+        foreach (Data.Entities.Action a in actions)
         {
             try
             {
