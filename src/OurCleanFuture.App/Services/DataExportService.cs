@@ -65,6 +65,7 @@ public class DataExportService
                                         .Include(l => l.Leads)
                                         .ThenInclude(b => b.Branch)
                                         .ThenInclude(d => d.Department)
+                                        .Include(o => o.Objective)
                                         .Include(dc => dc.DirectorsCommittees)
                                         .Include(u => u.UndertakenInTheTraditionalTerritoriesOf)
                                         .Include(i => i.Indicators)
