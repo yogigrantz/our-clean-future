@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 using OurCleanFuture.App.Extensions;
 using OurCleanFuture.Data;
+using OurCleanFuture.Data.Entities;
 
 namespace OurCleanFuture.App.Services;
 
@@ -103,8 +104,25 @@ public class DataExportService
                                     .Select(x => x.Title)
                             );
 
-                string internalStatus = a.InternalStatus.GetDisplayName();
-                string externalStatus = a.ExternalStatus.GetDisplayName();
+                string internalStatus;
+                try
+                {
+                    internalStatus = a.InternalStatus.GetDisplayName();
+
+                }
+                catch (Exception)
+                {
+                    internalStatus = "NotStarted";
+                }
+                string externalStatus;
+                try
+                {
+                    externalStatus = a.ExternalStatus.GetDisplayName();
+                }
+                catch (Exception)
+                {
+                    externalStatus = "NotStarted";
+                }
 
                 ActionExportModel aem = new ActionExportModel(a.Id, a.Number, a.Title, leadDept ?? "", branch ?? "", a.Objective?.Title ?? "",
                             dirComitee1, dirComitee2, targetCompletionDate, actuaCompletionDate,
