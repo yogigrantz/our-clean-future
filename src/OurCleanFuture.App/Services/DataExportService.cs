@@ -1,5 +1,6 @@
 ﻿using ClosedXML.Excel;
 using Microsoft.EntityFrameworkCore;
+using Newtonsoft.Json;
 using OurCleanFuture.App.Extensions;
 using OurCleanFuture.Data;
 
@@ -8,7 +9,7 @@ namespace OurCleanFuture.App.Services;
 public class DataExportService
 {
     private readonly IDbContextFactory<AppDbContext> _dbContextFactory;
-    private readonly IFileLoggerService _logger;
+    private readonly IFileLoggerService _logger = null;
 
     public DataExportService(IDbContextFactory<AppDbContext> dbContextFactory, IFileLoggerService logger)
     {
@@ -55,70 +56,79 @@ public class DataExportService
         return xlsxExport;
     }
 
-    private static async Task<ActionExportModel[]> MapActionsToExportModel(AppDbContext context)
+    private async Task<ActionExportModel[]> MapActionsToExportModel(AppDbContext context)
     {
         List<ActionExportModel> actionExportModels = new List<ActionExportModel>();
-
+        OurCleanFuture.Data.Entities.Action curActionRec = null;
         foreach (var a in context.Actions)
         {
-            string? leadDept = a.Leads?.FirstOrDefault()?.Branch?.Department?.ShortName;
-            string? branch = a.Leads?.FirstOrDefault()?.Branch?.Name;
-            string dirComitee1 = "";
-            string dirComitee2 = "";
-            if (a.DirectorsCommittees?.Count >= 1)
-                dirComitee1 = a.DirectorsCommittees[0].Name;
-            if (a.DirectorsCommittees?.Count >= 2)
-                dirComitee2 = a.DirectorsCommittees[1].Name;
+            try
+            {
+                curActionRec = a;
+                string? leadDept = a.Leads?.FirstOrDefault()?.Branch?.Department?.ShortName;
+                string? branch = a.Leads?.FirstOrDefault()?.Branch?.Name;
+                string dirComitee1 = "";
+                string dirComitee2 = "";
+                if (a.DirectorsCommittees?.Count >= 1)
+                    dirComitee1 = a.DirectorsCommittees[0].Name;
+                if (a.DirectorsCommittees?.Count >= 2)
+                    dirComitee2 = a.DirectorsCommittees[1].Name;
 
-            DateOnly? targetCompletionDate = null;
-            if (a.TargetCompletionDate != null)
-                targetCompletionDate = DateOnly.FromDateTime((System.DateTime)a.TargetCompletionDate);
-            DateOnly? actuaCompletionDate = null;
-            if (a.ActualCompletionDate != null)
-                actuaCompletionDate = DateOnly.FromDateTime((System.DateTime)a.ActualCompletionDate);
+                DateOnly? targetCompletionDate = null;
+                if (a.TargetCompletionDate != null)
+                    targetCompletionDate = DateOnly.FromDateTime((System.DateTime)a.TargetCompletionDate);
+                DateOnly? actuaCompletionDate = null;
+                if (a.ActualCompletionDate != null)
+                    actuaCompletionDate = DateOnly.FromDateTime((System.DateTime)a.ActualCompletionDate);
 
-            string undertaken = "";
-            if (a.UndertakenInTheTraditionalTerritoriesOf != null)
-                undertaken = string.Join(", ", a.UndertakenInTheTraditionalTerritoriesOf.Select(x => x.AbbreviatedName));
+                string undertaken = "";
+                if (a.UndertakenInTheTraditionalTerritoriesOf != null)
+                    undertaken = string.Join(", ", a.UndertakenInTheTraditionalTerritoriesOf.Select(x => x.AbbreviatedName));
 
-            string indicators = "";
-            if (a.Indicators != null && a.Indicators.Any(i => i.CollectionInterval == Data.Entities.CollectionInterval.Quarterly
-                                                           || i.CollectionInterval == Data.Entities.CollectionInterval.Biannual))
-                indicators = string.Join(
-                            "\n\n",
-                            a.Indicators
-                                .Where(i => i.CollectionInterval == Data.Entities.CollectionInterval.Quarterly
-                                         || i.CollectionInterval == Data.Entities.CollectionInterval.Biannual)
-                                .Select(x => x.Title));
-            string indicatorsAnnual = "";
-            if (a.Indicators != null && a.Indicators.Any(i => i.CollectionInterval == Data.Entities.CollectionInterval.Annual))
-                indicatorsAnnual = string.Join(
-                            "\n\n",
-                            a.Indicators
-                                .Where(i => i.CollectionInterval == Data.Entities.CollectionInterval.Annual)
-                                .Select(x => x.Title)
-                        );
+                string indicators = "";
+                if (a.Indicators != null && a.Indicators.Any(i => i.CollectionInterval == Data.Entities.CollectionInterval.Quarterly
+                                                               || i.CollectionInterval == Data.Entities.CollectionInterval.Biannual))
+                    indicators = string.Join(
+                                "\n\n",
+                                a.Indicators
+                                    .Where(i => i.CollectionInterval == Data.Entities.CollectionInterval.Quarterly
+                                             || i.CollectionInterval == Data.Entities.CollectionInterval.Biannual)
+                                    .Select(x => x.Title));
+                string indicatorsAnnual = "";
+                if (a.Indicators != null && a.Indicators.Any(i => i.CollectionInterval == Data.Entities.CollectionInterval.Annual))
+                    indicatorsAnnual = string.Join(
+                                "\n\n",
+                                a.Indicators
+                                    .Where(i => i.CollectionInterval == Data.Entities.CollectionInterval.Annual)
+                                    .Select(x => x.Title)
+                            );
 
-            string internalStatus = a.InternalStatus.GetDisplayName();
-            string externalStatus = a.ExternalStatus.GetDisplayName();
+                string internalStatus = a.InternalStatus.GetDisplayName();
+                string externalStatus = a.ExternalStatus.GetDisplayName();
 
-            ActionExportModel aem = new ActionExportModel(a.Id, a.Number, a.Title, leadDept ?? "", branch ?? "", a.Objective?.Title ?? "",
-                        dirComitee1, dirComitee2, targetCompletionDate, actuaCompletionDate,
-                        internalStatus,
-                        a.InternalStatusUpdatedBy,
-                        a.InternalStatusUpdatedDate,
-                        externalStatus,
-                        a.ExternalStatusUpdatedBy,
-                        a.ExternalStatusUpdatedDate,
-                        undertaken,
-                        a.EngagementsAndPartnershipActivities,
-                        a.PublicExplanation,
-                        a.Note,
-                        indicators,
-                        indicatorsAnnual,
-                        "edit");
+                ActionExportModel aem = new ActionExportModel(a.Id, a.Number, a.Title, leadDept ?? "", branch ?? "", a.Objective?.Title ?? "",
+                            dirComitee1, dirComitee2, targetCompletionDate, actuaCompletionDate,
+                            internalStatus,
+                            a.InternalStatusUpdatedBy,
+                            a.InternalStatusUpdatedDate,
+                            externalStatus,
+                            a.ExternalStatusUpdatedBy,
+                            a.ExternalStatusUpdatedDate,
+                            undertaken,
+                            a.EngagementsAndPartnershipActivities,
+                            a.PublicExplanation,
+                            a.Note,
+                            indicators,
+                            indicatorsAnnual,
+                            "edit");
 
-            actionExportModels.Add(aem);
+                actionExportModels.Add(aem);
+
+            }
+            catch (Exception ex)
+            {
+                _logger.Log($"Failed record: {ex.Message} {ex.InnerException?.Message}\r\n{JsonConvert.SerializeObject(curActionRec, Formatting.Indented)}");
+            }
         }
 
         return actionExportModels.ToArray();
